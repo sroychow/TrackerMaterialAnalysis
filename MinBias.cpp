@@ -22,9 +22,8 @@ int layer[35]={-99};
 int detector[35]={0};
 float sag=-99;
 int n_pixel=0;
-bool isMC=false;
 
-void MinBiasAnalysis(TTree *Tree, bool isFirstRun){
+void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 
 	int nEntries = Tree->GetEntries();
 
@@ -182,8 +181,8 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun){
 
 			plot2D("b2vspt", trackPt*trackPt, sqrt(b2), 1, h_2d, 100, 0.5, 2.25, 500, 0., 50);
 
-			TString sagmin_name="sagmin"+tripl_name;
-			TString sagpl_name="sagpl"+tripl_name;
+			TString sagmin_name="sagmin"+triplet;
+			TString sagpl_name="sagpl"+triplet;
 
 			if(!isFirstRun){
 				TH1 *sagmean_min=(TH1*)fileIN->Get(sagmin_name);
@@ -240,7 +239,7 @@ void MinBias(bool isFirstRun = true, bool isMC = true, TString dirname="root://e
 		while ((file=(TSystemFile*)next())) {
 			fname = file->GetName();
 			if (!file->IsDirectory() && fname.EndsWith(ext)) {
-				if(!isMC&&i>2) break;
+				if(!isMC&&i>2) break; //set the number of files to run
 				i++;
 				//cout << fname.Data() << endl;
 				TString filename;
@@ -274,7 +273,7 @@ void MinBias(bool isFirstRun = true, bool isMC = true, TString dirname="root://e
 		Tree->SetBranchAddress("trackY0" ,&trackY0);
 
 
-		MinBiasAnalysis(Tree, isFirstRun);
+		MinBiasAnalysis(Tree, isFirstRun, isMC);
 
 
 	}
@@ -293,6 +292,11 @@ void MinBias(bool isFirstRun = true, bool isMC = true, TString dirname="root://e
 		if(isMC) fileOUT = new TFile("MinBiasMC_sag1D.root","RECREATE");
 		else fileOUT = new TFile("MinBiasDATA_sag1D.root","RECREATE");
 	}
+	else
+		TFile *fileOUT;
+		if(isMC) fileOUT = new TFile("MinBiasMC_sag1D_new.root","RECREATE");
+		else fileOUT = new TFile("MinBiasDATA_sag1D_new.root","RECREATE");
+	}
 
 	for(it1dm=h_1dm.begin(); it1dm!=h_1dm.end(); it1dm++) {
 
@@ -308,12 +312,12 @@ void MinBias(bool isFirstRun = true, bool isMC = true, TString dirname="root://e
 	}
 
 	// Writes 3D histos
+
 	if(!isFirstRun){
 		TFile *file3D;
 		if(isMC) file3D= new TFile("MinBias3D_MC.root","RECREATE");
 		else file3D=new TFile("MinBias3D_DATA.root","RECREATE");
-
-
+		}
 		for(it3d=h_3dm.begin(); it3d!=h_3dm.end(); it3d++) {
 
 			it3d->second->Write();
@@ -325,6 +329,5 @@ void MinBias(bool isFirstRun = true, bool isMC = true, TString dirname="root://e
 			it3d2->second->Write();
 			delete it3d2->second;
 		}
-	}
 
 }
