@@ -105,16 +105,16 @@ float calcCos(float eta){
 }
 
 // Plotting functions
-void plot1D(string title, float xval, double weight, std::map<string, TH1F*> &allhistos,
+void plot1D(std::string title, float xval, double weight, std::map<std::string, TH1F*> &allhistos,
 		int numbinsx, float xmin, float xmax)
 {
-	std::map<string, TH1F*>::iterator iter= allhistos.find(title);
+	std::map<std::string, TH1F*>::iterator iter= allhistos.find(title);
 	if(iter == allhistos.end()) //no histo for this yet, so make a new one
 
 	{
 		TH1F* currentHisto= new TH1F(title.c_str(), title.c_str(), numbinsx, xmin, xmax);
 		currentHisto->Fill(xval, weight);
-		allhistos.insert(std::pair<string, TH1F*> (title,currentHisto) );
+		allhistos.insert(std::pair<std::string, TH1F*> (title,currentHisto) );
 	}
 	else // exists already, so just fill it
 
@@ -124,17 +124,17 @@ void plot1D(string title, float xval, double weight, std::map<string, TH1F*> &al
 	}
 }
 
-void plot2D(string title, float xval, float yval, double weight, std::map<string, TH2F*> &allhistos,
+void plot2D(std::string title, float xval, float yval, double weight, std::map<string, TH2F*> &allhistos,
 		int numbinsx, float xmin, float xmax, int numbinsy, float ymin, float ymax)
 {
 
-	std::map<string, TH2F*>::iterator iter= allhistos.find(title);
+	std::map<std::string, TH2F*>::iterator iter= allhistos.find(title);
 	if(iter == allhistos.end()) //no histo for this yet, so make a new one
 
 	{
 		TH2F* currentHisto= new TH2F(title.c_str(), title.c_str(), numbinsx, xmin, xmax, numbinsy, ymin, ymax);
 		currentHisto->Fill(xval, yval, weight);
-		allhistos.insert(std::pair<string, TH2F*> (title,currentHisto) );
+		allhistos.insert(std::pair<std::string, TH2F*> (title,currentHisto) );
 	}
 	else // exists already, so just fill it
 
@@ -146,17 +146,17 @@ void plot2D(string title, float xval, float yval, double weight, std::map<string
 
 }
 
-void plot3D(string title, float xval, float yval, float zval, double weight, std::map<string, TH3F*> &allhistos,
+void plot3D(std::string title, float xval, float yval, float zval, double weight, std::map<std::string, TH3F*> &allhistos,
 		int numbinsx, float xmin, float xmax, int numbinsy, float ymin, float ymax, int numbinsz, float zmin, float zmax)
 {
 
-	std::map<string, TH3F*>::iterator iter= allhistos.find(title);
+	std::map<std::string, TH3F*>::iterator iter= allhistos.find(title);
 	if(iter == allhistos.end()) //no histo for this yet, so make a new one
 
 	{
 		TH3F* currentHisto= new TH3F(title.c_str(), title.c_str(), numbinsx, xmin, xmax, numbinsy, ymin, ymax, numbinsz, zmin, zmax);
 		currentHisto->Fill(xval, yval, zval, weight);
-		allhistos.insert(std::pair<string, TH3F*> (title,currentHisto) );
+		allhistos.insert(std::pair<std::string, TH3F*> (title,currentHisto) );
 	}
 	else // exists already, so just fill it
 

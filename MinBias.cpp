@@ -24,7 +24,7 @@ float sag=-99;
 int n_pixel=0;
 bool isMC=false;
 
-void MinBiasAnalysis(TTree *Tree){
+void MinBiasAnalysis(TTree *Tree, bool isFirstRun){
 
 	int nEntries = Tree->GetEntries();
 
@@ -40,9 +40,11 @@ void MinBiasAnalysis(TTree *Tree){
 	double eta_min[100]={-99};
 	float sin_track=-99;
 	int sel_tracks=0;
+	float mean_min=0;
+	float mean_pl=0;
 
+	TFile *fileIN;
 	if(!isFirstRun){
-		TFile *fileIN;
 		if(isMC) fileIN = TFile::Open("MinBiasMC_sag1D.root");
 		else fileIN = TFile::Open("MinBiasDATA_sag1D.root");
 	}
@@ -110,7 +112,7 @@ void MinBiasAnalysis(TTree *Tree){
 			}
 
 			if(position[j]=="_pixel1"||position[j]=="_pixel2"||position[j]=="_pixel3"||position[j]=="_pixeldisk+1"||position[j]=="_pixeldisk+2"||position[j]=="_pixeldisk-1"||position[j]=="_pixeldisk-2")
-				n_pixel++;
+			n_pixel++;
 		}
 
 		if(n_pixel<2||n_pixel>3) continue;
@@ -183,15 +185,16 @@ void MinBiasAnalysis(TTree *Tree){
 			TString sagmin_name="sagmin"+tripl_name;
 			TString sagpl_name="sagpl"+tripl_name;
 
-			TH1 *sagmean_min=(TH1*)fileIN->Get(sagmin_name);
-			TH1 *sagmean_pl=(TH1*)fileIN->Get(sagpl_name);
+			if(!isFirstRun){
+				TH1 *sagmean_min=(TH1*)fileIN->Get(sagmin_name);
+				TH1 *sagmean_pl=(TH1*)fileIN->Get(sagpl_name);
 
-			if(!sagmean_min) continue;
-			if(!sagmean_pl) continue;
+				if(!sagmean_min) continue;
+				if(!sagmean_pl) continue;
 
-			float mean_min=sagmean_min->GetMean();
-			float mean_pl=sagmean_pl->GetMean();
-
+				mean_min=sagmean_min->GetMean();
+				mean_pl=sagmean_pl->GetMean();
+			}
 			if(triplet!=""){
 				if(isFirstRun){
 					if(sag<0) plot1D("sagmin"+triplet, pt[j]*sag, 1, h_1dm, 600, -0.01, 0);
@@ -203,27 +206,27 @@ void MinBiasAnalysis(TTree *Tree){
 
 					if(sag<0) plot3D("sag3Dminus"+triplet, eta[j], pt[j]*pt[j], ((pt[j]*sag)-mean_min)*sqrt(b2), 1, h_3dm, 41, -4, 4, 10, 0.5, 2.25, 600, -0.01, 0.01);
 					else plot3D("sag3Dplus"+triplet, eta[j], pt[j]*pt[j], ((pt[j]*sag)-mean_pl)*sqrt(b2), 1, h_3dpl, 41, -4, 4, 10, 0.5, 2.25, 600, -0.01, 0.01);
+				}
+
+				triplet="";
+				tripl_name="";
+				sagmin_name="sagminus";
+				sagpl_name="sagplus";
 			}
 
-			triplet="";
-			tripl_name="";
-			sagmin_name="sagminus";
-			sagpl_name="sagplus";
-		}
+			for (int j=0; j<n; j++){
+				position[j]="";
+				r[j]=0;
+				phi[j]=0;
+				sag=0;
+			}
 
-		for (int j=0; j<n; j++){
-			position[j]="";
-			r[j]=0;
-			phi[j]=0;
-			sag=0;
 		}
 
 	}
-
 }
 
-
-void MinBias(bool isFirstRun = true, bool isMC, TString dirname="root://eoscms//eos/cms//store/cmst3/user/bachtis/ZeroBias/crab_PointsDATA/160606_201244/0000/", const char *ext=".root")
+void MinBias(bool isFirstRun = true, bool isMC = true, TString dirname="root://eoscms//eos/cms//store/cmst3/user/bachtis/ZeroBias/crab_PointsDATA/160606_201244/0000/", const char *ext=".root")
 {
 	if(isMC) dirname="root://eoscms//eos/cms//store/cmst3/user/bachtis/MinBias_TuneMBReps08_13TeV-pythia8/crab_PointsMC/160607_144658/0000/";
 	TSystemDirectory dir(dirname, dirname);
@@ -271,7 +274,7 @@ void MinBias(bool isFirstRun = true, bool isMC, TString dirname="root://eoscms//
 		Tree->SetBranchAddress("trackY0" ,&trackY0);
 
 
-		MinBiasAnalysis(Tree);
+		MinBiasAnalysis(Tree, isFirstRun);
 
 
 	}
@@ -305,23 +308,23 @@ void MinBias(bool isFirstRun = true, bool isMC, TString dirname="root://eoscms//
 	}
 
 	// Writes 3D histos
+	if(!isFirstRun){
+		TFile *file3D;
+		if(isMC) file3D= new TFile("MinBias3D_MC.root","RECREATE");
+		else file3D=new TFile("MinBias3D_DATA.root","RECREATE");
 
-	TFile *file3D;
-	if(isMC) file3D= new TFile("MinBias3D_MC.root","RECREATE");
-	else file3D=new TFile("MinBias3D_DATA.root","RECREATE");
 
+		for(it3d=h_3dm.begin(); it3d!=h_3dm.end(); it3d++) {
 
-	for(it3d=h_3dm.begin(); it3d!=h_3dm.end(); it3d++) {
+			it3d->second->Write();
+			delete it3d->second;
+		}
 
-		it3d->second->Write();
-		delete it3d->second;
+		for(it3d2=h_3dpl.begin(); it3d2!=h_3dpl.end(); it3d2++) {
+
+			it3d2->second->Write();
+			delete it3d2->second;
+		}
 	}
-
-	for(it3d2=h_3dpl.begin(); it3d2!=h_3dpl.end(); it3d2++) {
-
-		it3d2->second->Write();
-		delete it3d2->second;
-	}
-
 
 }
