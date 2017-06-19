@@ -43,18 +43,18 @@ for key in fIn.GetListOfKeys():
             mean=(1./2*(th1.GetRMS()+th1pl.GetRMS()))
             mean_err=mean*math.sqrt(th1.GetRMSError()*th1.GetRMSError()+th1pl.GetRMSError()*th1pl.GetRMSError())
 
-            rms.SetBinContent(i, mean*mean)
-            rms.SetBinError(i, mean_err)
+            rms.SetBinContent(j, mean*mean)
+            rms.SetBinError(j, mean_err)
 
         if(rms.GetEntries()<7): continue
         fit=ROOT.TF1("fit", "pol1");
         rms.Fit(fit, "Q");
 
-        slope.SetBinContent(j,fit.GetParameter(1))
-        slope.SetBinError(j, fit.GetParError(1))
+        slope.SetBinContent(i,fit.GetParameter(1))
+        slope.SetBinError(i, fit.GetParError(1))
 
-        radlength.SetBinContent(j,fit.GetParameter(0)/0.013/0.013)
-        radlength.SetBinError(j, fit.GetParError(0)/0.013/0.013)
+        radlength.SetBinContent(i,fit.GetParameter(0)/0.013/0.013)
+        radlength.SetBinError(i, fit.GetParError(0)/0.013/0.013)
 
     radlength.GetXaxis().SetTitle("local #eta")
     radlength.GetYaxis().SetTitle("x/X_{0}")

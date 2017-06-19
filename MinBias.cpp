@@ -41,6 +41,7 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 	int sel_tracks=0;
 	float mean_min=0;
 	float mean_pl=0;
+	int in_plots=0;
 
 	TFile *fileIN;
 	if(!isFirstRun){
@@ -51,7 +52,7 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 	// Loop over tracks
 	for(int i = 1; i < nEntries; i++) {
 
-		if(i%100000==0) cout <<"Analyzed entry "<< i <<"/"<< nEntries <<" selected tracks "<< sel_tracks<<endl;
+	  if(i%100000==0) cout <<"Analyzed entry "<< i <<"/"<< nEntries <<" selected tracks "<< sel_tracks<<" entering in plots "<<in_plots<<endl;
 
 		Tree->GetEntry(i);
 		n_pixel=0;
@@ -165,6 +166,8 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 
 			tripl_name=position[i_prev]+position[j]+position[i_next];
 			triplet=position[j];
+			
+			if(position[j]=="_pixel2") in_plots++;
 
 			// A bunch of plots
 			plot1D("pt", trackPt, 1, h_1d, 1000, 0.5, 2);
@@ -212,14 +215,12 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 				sagmin_name="sagminus";
 				sagpl_name="sagplus";
 			}
-
-			for (int j=0; j<n; j++){
-				position[j]="";
-				r[j]=0;
-				phi[j]=0;
-				sag=0;
-			}
-
+		}
+		for (int j=0; j<n; j++){
+			position[j]="";
+			r[j]=0;
+			phi[j]=0;
+			sag=0;
 		}
 
 	}
@@ -292,42 +293,42 @@ void MinBias(bool isFirstRun = true, bool isMC = true, TString dirname="root://e
 		if(isMC) fileOUT = new TFile("MinBiasMC_sag1D.root","RECREATE");
 		else fileOUT = new TFile("MinBiasDATA_sag1D.root","RECREATE");
 	}
-	else
-		TFile *fileOUT;
-		if(isMC) fileOUT = new TFile("MinBiasMC_sag1D_new.root","RECREATE");
-		else fileOUT = new TFile("MinBiasDATA_sag1D_new.root","RECREATE");
-	}
+	else{
+	TFile *fileOUT;
+	if(isMC) fileOUT = new TFile("MinBiasMC_sag1D_new.root","RECREATE");
+	else fileOUT = new TFile("MinBiasDATA_sag1D_new.root","RECREATE");
+}
 
-	for(it1dm=h_1dm.begin(); it1dm!=h_1dm.end(); it1dm++) {
+for(it1dm=h_1dm.begin(); it1dm!=h_1dm.end(); it1dm++) {
 
-		it1dm->second->Write();
+	it1dm->second->Write();
 
-		delete it1dm->second;
-	}
+	delete it1dm->second;
+}
 
-	for(it1dpl=h_1dpl.begin(); it1dpl!=h_1dpl.end(); it1dpl++) {
+for(it1dpl=h_1dpl.begin(); it1dpl!=h_1dpl.end(); it1dpl++) {
 
-		it1dpl->second->Write();
-		delete it1dpl->second;
-	}
+	it1dpl->second->Write();
+	delete it1dpl->second;
+}
 
-	// Writes 3D histos
+// Writes 3D histos
 
-	if(!isFirstRun){
-		TFile *file3D;
-		if(isMC) file3D= new TFile("MinBias3D_MC.root","RECREATE");
-		else file3D=new TFile("MinBias3D_DATA.root","RECREATE");
-		}
-		for(it3d=h_3dm.begin(); it3d!=h_3dm.end(); it3d++) {
+if(!isFirstRun){
+	TFile *file3D;
+	if(isMC) file3D= new TFile("MinBias3D_MC.root","RECREATE");
+	else file3D=new TFile("MinBias3D_DATA.root","RECREATE");
+}
+for(it3d=h_3dm.begin(); it3d!=h_3dm.end(); it3d++) {
 
-			it3d->second->Write();
-			delete it3d->second;
-		}
+	it3d->second->Write();
+	delete it3d->second;
+}
 
-		for(it3d2=h_3dpl.begin(); it3d2!=h_3dpl.end(); it3d2++) {
+for(it3d2=h_3dpl.begin(); it3d2!=h_3dpl.end(); it3d2++) {
 
-			it3d2->second->Write();
-			delete it3d2->second;
-		}
+	it3d2->second->Write();
+	delete it3d2->second;
+}
 
 }
