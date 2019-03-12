@@ -22,8 +22,18 @@ int layer[35]={-99};
 int detector[35]={0};
 float sag=-99;
 int n_pixel=0;
+float bsX0=0.;
+float bsY0=0.;
+float bsZ0=0.;
+float bsdxdz=0.;
+float bsdydz=0.;
+float bsSigmaZ=0.;
+float bsX0Error=0.;
+float bsY0Error=0.;
+float bsZ0Error=0.;
 
-void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
+
+void MatCalc::MinBiasAnalysis(){
 
 	int nEntries = Tree->GetEntries();
 
@@ -44,15 +54,18 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 	int in_plots=0;
 
 	TFile *fileIN;
-	if(!isFirstRun){
-		if(isMC) fileIN = TFile::Open("MinBiasMC_sag1D.root");
+	if(!isFirstRun_){
+		if(isMC_) fileIN = TFile::Open("MinBiasMC_sag1D.root");
 		else fileIN = TFile::Open("MinBiasDATA_sag1D.root");
 	}
 
 	// Loop over tracks
 	for(int i = 1; i < nEntries; i++) {
 
-	  if(i%100000==0) cout <<"Analyzed entry "<< i <<"/"<< nEntries <<" selected tracks "<< sel_tracks<<" entering in plots "<<in_plots<<endl;
+	  if(i%100000==0) cout <<"Analyzed entry "     << i <<"/"<< nEntries
+		                     <<" selected tracks "   << sel_tracks
+												 <<" entering in plots " <<in_plots
+												 <<endl;
 
 		Tree->GetEntry(i);
 		n_pixel=0;
@@ -74,12 +87,12 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 			if(stereo[j]==1) continue; // avoid stereo modules
 
 			// identify layers with strings instead of numbers
-			if(detector[j]==0){
+			if(detector[j] == 0){
 				position[j]="_pixel"+std::to_string(layer[j]);
 				region[j]="_barrel";
 				number[j]=layer[j];
 			}
-			if(detector[j]==1){
+			if(detector[j] == 1){
 				position[j]="_pixeldisk"+std::to_string(layer[j]);
 				if(layer[j]>0) position[j]="_pixeldisk+"+std::to_string(layer[j]);
 				region[j]="_forward";
@@ -115,7 +128,7 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 			n_pixel++;
 		}
 
-		if(n_pixel<2||n_pixel>3) continue;
+		//if(n_pixel<2||n_pixel>3) continue;
 
 		// Loop again to form the triplet strings excluding first and last hits
 		for (int j=1; j<n-1; j++){
@@ -166,7 +179,7 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 
 			tripl_name=position[i_prev]+position[j]+position[i_next];
 			triplet=position[j];
-			
+
 			if(position[j]=="_pixel2") in_plots++;
 
 			// A bunch of plots
@@ -226,109 +239,111 @@ void MinBiasAnalysis(TTree *Tree, bool isFirstRun, bool isMC){
 	}
 }
 
-void MinBias(bool isFirstRun = true, bool isMC = true, TString dirname="root://eoscms//eos/cms//store/cmst3/user/bachtis/ZeroBias/crab_PointsDATA/160606_201244/0000/", const char *ext=".root")
-{
-	if(isMC) dirname="root://eoscms//eos/cms//store/cmst3/user/bachtis/MinBias_TuneMBReps08_13TeV-pythia8/crab_PointsMC/160607_144658/0000/";
-	TSystemDirectory dir(dirname, dirname);
-	TList *files = dir.GetListOfFiles();
-	if (files) {
-		TSystemFile *file;
-		TString fname;
-		TIter next(files);
-		int i=0;
-		TChain *Tree = new TChain("tree");
-		while ((file=(TSystemFile*)next())) {
-			fname = file->GetName();
-			if (!file->IsDirectory() && fname.EndsWith(ext)) {
-				if(!isMC&&i>2) break; //set the number of files to run
-				i++;
-				//cout << fname.Data() << endl;
-				TString filename;
-				if(!isMC) filename ="root://eoscms//eos/cms//store/cmst3/user/bachtis/ZeroBias/crab_PointsDATA/160606_201244/0000/";
-				else filename="root://eoscms//eos/cms//store/cmst3/user/bachtis/MinBias_TuneMBReps08_13TeV-pythia8/crab_PointsMC/160607_144658/0000/";
-				filename=filename+fname.Data();
-				cout << filename<< endl;
-				Tree->AddFile(filename);
+MatCalc::MatCalc(bool isFirstRun, bool isMC, TString dirName) {
+	isMC_ = isMC;
+	isFirstRun_ = isFirstRun;
+  TSystemDirectory dir(dirname, dirname);
+  TList *files = dir.GetListOfFiles();
+  Tree = new TChain("tree");
+  if (files) {
+    TSystemFile *file;
+    TString fname;
+    TIter next(files);
+    while ((file=(TSystemFile*)next())) {
+      fname = file->GetName();
+      if (!file->IsDirectory() && fname.EndsWith(".root")) {
+        //if(!isMC_&&i>2) break; //set the number of files to run
+        //cout << fname.Data() << endl;
+        TString filename;
+        filename = dirName+fname.Data();
+        cout << filename<< endl;
+        Tree->AddFile(filename);
+      }
+    }
+  }
+  if(!Tree) std::cout << "Tree missing!" << std::endl;
 
-			}
-		}
-
-		Tree->SetBranchAddress("n" ,&n);
-		Tree->SetBranchAddress("zUnc" ,zUnc);
-		Tree->SetBranchAddress("rUnc" ,rUnc);
-		Tree->SetBranchAddress("phiUnc" ,phiUnc);
-		Tree->SetBranchAddress("z" ,z);
-		Tree->SetBranchAddress("eta" ,eta);
-		Tree->SetBranchAddress("phi" ,phi);
-		Tree->SetBranchAddress("r" ,r);
-		Tree->SetBranchAddress("pt" ,pt);
-		Tree->SetBranchAddress("stereo" , stereo);
-		Tree->SetBranchAddress("layer" , layer);
-		Tree->SetBranchAddress("detector" , detector);
-		Tree->SetBranchAddress("trackEta" ,&trackEta);
-		Tree->SetBranchAddress("trackPhi" ,&trackPhi);
-		Tree->SetBranchAddress("trackPt" ,&trackPt);
-		Tree->SetBranchAddress("trackPtErr" ,&trackPtErr);
-		Tree->SetBranchAddress("trackZ0" ,&trackZ0);
-		Tree->SetBranchAddress("trackX0" ,&trackX0);
-		Tree->SetBranchAddress("trackY0" ,&trackY0);
-
-
-		MinBiasAnalysis(Tree, isFirstRun, isMC);
-
-
-	}
-
-
-	std::map<std::string, TH1F*>::iterator it1d;
+  Tree->SetBranchAddress("n" ,&n);
+  Tree->SetBranchAddress("zUnc" ,zUnc);
+  Tree->SetBranchAddress("rUnc" ,rUnc);
+  Tree->SetBranchAddress("phiUnc" ,phiUnc);
+  Tree->SetBranchAddress("z" ,z);
+  Tree->SetBranchAddress("eta" ,eta);
+  Tree->SetBranchAddress("phi" ,phi);
+  Tree->SetBranchAddress("r" ,r);
+  Tree->SetBranchAddress("pt" ,pt);
+  Tree->SetBranchAddress("stereo" , stereo);
+  Tree->SetBranchAddress("layer" , layer);
+  Tree->SetBranchAddress("detector" , detector);
+  Tree->SetBranchAddress("trackEta" ,&trackEta);
+  Tree->SetBranchAddress("trackPhi" ,&trackPhi);
+  Tree->SetBranchAddress("trackPt" ,&trackPt);
+  Tree->SetBranchAddress("trackPtErr" ,&trackPtErr);
+  Tree->SetBranchAddress("trackZ0" ,&trackZ0);
+  Tree->SetBranchAddress("trackX0" ,&trackX0);
+  Tree->SetBranchAddress("trackY0" ,&trackY0);
+  Tree->SetBranchAddress("beamSpotX0",&bsX0);
+  Tree->SetBranchAddress("beamSpotY0",&bsY0);
+  Tree->SetBranchAddress("beamSpotZ0",&bsZ0);
+  Tree->SetBranchAddress("beamSpotdxdz",&bsdxdz);
+  Tree->SetBranchAddress("beamSpotdxdz",&bsdydz);
+  Tree->SetBranchAddress("beamSpotSignmaZ",&bsSigmaZ);
+  Tree->SetBranchAddress("beamSpotX0error",&bsX0Error);
+  Tree->SetBranchAddress("beamSpotY0error",&bsY0Error);
+  Tree->SetBranchAddress("beamSpotZ0error",&bsZ0Error);
+}
+//Function to write histos to output
+void MatCalc::writeoutput() {
+	/*std::map<std::string, TH1F*>::iterator it1d;
 	std::map<std::string, TH1F*>::iterator it1dm;
 	std::map<std::string, TH1F*>::iterator it1dpl;
 	std::map<std::string, TH3F*>::iterator it3d;
 	std::map<std::string, TH3F*>::iterator it3dpl;
 	std::map<std::string, TH3F*>::iterator it3d2;
-
+  */
 	// Writes 1D histos
-	if(isFirstRun){
+	if(isFirstRun_){
 		TFile *fileOUT;
-		if(isMC) fileOUT = new TFile("MinBiasMC_sag1D.root","RECREATE");
+		if(isMC_) fileOUT = new TFile("MinBiasMC_sag1D.root","RECREATE");
 		else fileOUT = new TFile("MinBiasDATA_sag1D.root","RECREATE");
 	}
 	else{
-	TFile *fileOUT;
-	if(isMC) fileOUT = new TFile("MinBiasMC_sag1D_new.root","RECREATE");
-	else fileOUT = new TFile("MinBiasDATA_sag1D_new.root","RECREATE");
+		TFile *fileOUT;
+		if(isMC_) fileOUT = new TFile("MinBiasMC_sag1D_new.root","RECREATE");
+		else fileOUT = new TFile("MinBiasDATA_sag1D_new.root","RECREATE");
+	}
+
+	for(auto it1dm: h_1dm) {
+		it1dm->second->Write();
+		delete it1dm->second;
+	}
+
+	for(auto it1dpl : h_1dpl) {
+		it1dpl->second->Write();
+		delete it1dpl->second;
+	}
+
+	// Writes 3D histos
+
+	if(!isFirstRun_){
+		TFile *file3D;
+		if(isMC_) file3D= new TFile("MinBias3D_MC.root","RECREATE");
+		else file3D=new TFile("MinBias3D_DATA.root","RECREATE");
+	}
+	for(auto it3d : h_3dm) {
+		it3d->second->Write();
+		delete it3d->second;
+	}
+	for(auto it3d2 : h_3dpl) {
+		it3d2->second->Write();
+		delete it3d2->second;
+	}
 }
 
-for(it1dm=h_1dm.begin(); it1dm!=h_1dm.end(); it1dm++) {
-
-	it1dm->second->Write();
-
-	delete it1dm->second;
-}
-
-for(it1dpl=h_1dpl.begin(); it1dpl!=h_1dpl.end(); it1dpl++) {
-
-	it1dpl->second->Write();
-	delete it1dpl->second;
-}
-
-// Writes 3D histos
-
-if(!isFirstRun){
-	TFile *file3D;
-	if(isMC) file3D= new TFile("MinBias3D_MC.root","RECREATE");
-	else file3D=new TFile("MinBias3D_DATA.root","RECREATE");
-}
-for(it3d=h_3dm.begin(); it3d!=h_3dm.end(); it3d++) {
-
-	it3d->second->Write();
-	delete it3d->second;
-}
-
-for(it3d2=h_3dpl.begin(); it3d2!=h_3dpl.end(); it3d2++) {
-
-	it3d2->second->Write();
-	delete it3d2->second;
-}
-
+void MinBias(bool isFirstRun = true, bool isMC = true, TString dirname="root://eoscms//eos/cms//store/cmst3/user/bachtis/ZeroBias/crab_PointsDATA/160606_201244/0000/", const char *ext=".root")
+{
+	MatCalc* mcal = new MatCalc(isFirstRun, isMC, dirname);
+	mcal->MinBiasAnalysis();
+  mcal->writeoutput();
+	delete mcal;
 }
