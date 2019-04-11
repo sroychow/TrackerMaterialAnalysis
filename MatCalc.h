@@ -49,7 +49,9 @@
 #include "Math/Point3D.h"
 #include <cmath>
 
-
+using std::string;
+using std::endl;
+using std::cout;
 // Header file for the classes stored in the TTree if any.
 
 class MatCalc {
@@ -303,11 +305,15 @@ MatCalc::MatCalc(TChain *tree) : fChain(0)
    Init(tree);
 }
 MatCalc::MatCalc(bool isFirstRun, bool isMC, TString dirName) {
-	isMC_ = isMC;
-	isFirstRun_ = isFirstRun;
+  isMC_ = isMC;
+  isFirstRun_ = isFirstRun;
   TSystemDirectory dir(dirName, dirName);
   TList *files = dir.GetListOfFiles();
   fChain = new TChain("hitanalyzer/tree");
+  int i = 0;
+  int maxFiles = 5;
+  if(isMC_) maxFiles = 80;
+
   if (files) {
     TSystemFile *file;
     TString fname;
@@ -321,7 +327,9 @@ MatCalc::MatCalc(bool isFirstRun, bool isMC, TString dirName) {
         filename = dirName+fname.Data();
         cout << filename<< endl;
         fChain->AddFile(filename);
-      }
+        i++;
+        if(i>maxFiles)   break;
+       }
     }
     Init(fChain);
   }

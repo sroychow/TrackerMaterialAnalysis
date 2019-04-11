@@ -45,18 +45,18 @@ void MatCalc::Loop()
 
 //Function to write histos to output
 void MatCalc::writeoutput() {
+	TFile *fileOUT;
 	// Writes 1D histos
 	if(isFirstRun_){
-		TFile *fileOUT;
 		if(isMC_) fileOUT = new TFile("MinBiasMC_sag1D.root","RECREATE");
 		else fileOUT = new TFile("MinBiasDATA_sag1D.root","RECREATE");
 	}
 	else{
-		TFile *fileOUT;
+		//TFile *fileOUT;
 		if(isMC_) fileOUT = new TFile("MinBiasMC_sag1D_new.root","RECREATE");
 		else fileOUT = new TFile("MinBiasDATA_sag1D_new.root","RECREATE");
 	}
-
+  fileOUT->cd();
   for(auto it1dm: h_1d) {
 		it1dm.second->Write();
 		delete it1dm.second;
@@ -72,13 +72,15 @@ void MatCalc::writeoutput() {
 		delete it1dpl.second;
 	}
 
+   fileOUT->Save();
+   fileOUT->Close();
 	// Writes 3D histos
 
 	if(!isFirstRun_){
 		TFile *file3D;
 		if(isMC_) file3D= new TFile("MinBias3D_MC.root","RECREATE");
 		else file3D=new TFile("MinBias3D_DATA.root","RECREATE");
-	}
+        file3D->cd();
 	for(auto it3d : h_3dm) {
 		it3d.second->Write();
 		delete it3d.second;
@@ -87,6 +89,10 @@ void MatCalc::writeoutput() {
 		it3d2.second->Write();
 		delete it3d2.second;
 	}
+        file3D->Save();
+        file3D->Close();
+	}
+
 }
 void MatCalc::MinBiasAnalysis(){
 
@@ -121,9 +127,26 @@ void MatCalc::MinBiasAnalysis(){
 		                     <<" selected tracks "   << sel_tracks
 												 <<" entering in plots " <<in_plots
 												 <<endl;
-
+		if(in_plots > 1000000) break;
 		fChain->GetEntry(i);
 		n_pixel=0;
+
+//definition from BeamSpot.h
+//double x(const double z) const { return x0() + dxdz() * (z - z0()); }
+/*
+  const BeamSpot::Point BeamSpot::position(const double z) const {
+    Point pos(x(z),y(z),z);
+    return pos;
+  }
+*/
+		// A bunch of plots
+                //std::cout << beamSpotX0 << "\t" << beamSpotY0 << "\t" << beamSpotZ0 << std::endl;
+		double bsX0 = beamSpotX0 + beamSpotdxdz * (trackZ0 - beamSpotZ0);
+		double bsY0 = beamSpotY0 + beamSpotdydz * (trackZ0 - beamSpotZ0);
+
+                plot1D("beamSpotX0", bsX0, 1, h_1d, 1000, -1., 1.);
+                plot1D("beamSpotY0", bsY0, 1, h_1d, 1000, -1., 1.);
+                plot1D("beamSpotZ0", trackZ0, 1, h_1d, 2000, -2., 2.);
 
 		// Quality cuts
 		if(trackPt>1.5) continue;
@@ -142,12 +165,12 @@ void MatCalc::MinBiasAnalysis(){
 			if(stereo[j]==1) continue; // avoid stereo modules
 
 			// identify layers with strings instead of numbers
-			if(detector[j] == 14){
+			if(detector[j] == 0){
 				position[j]="_pixel"+std::to_string(layer[j]);
 				region[j]="_barrel";
 				number[j]=layer[j];
 			}
-			if(detector[j] == 15){
+			if(detector[j] == 1){
 				position[j]="_pixeldisk"+std::to_string(layer[j]);
 				if(layer[j]>0) position[j]="_pixeldisk+"+std::to_string(layer[j]);
 				region[j]="_forward";
@@ -260,7 +283,7 @@ void MatCalc::MinBiasAnalysis(){
 			else sin_track=TMath::Abs(calcCos(trackEta));
       float rprev = -99., phiprev;
       if(i_prev == 500) {
-        ROOT::Math::XYZPoint bs(beamSpotX0, beamSpotY0, beamSpotZ0);
+        ROOT::Math::XYZPoint bs(bsX0, bsY0, trackZ0);
         rprev = bs.R();
         phiprev = bs.Phi();
         //std::cout << "BS:" << rprev << "," << phiprev << std::endl;
